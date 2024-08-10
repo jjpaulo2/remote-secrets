@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "remote-secrets"
+version = "1.0.0"
+description = "Easily read and manage remote secrets using Python"
+authors = ["João Paulo Carvalho <jjpaulo2@protonmail.com>"]
+license = "BSD-2-Clause"
+readme = "README.md"
+include = [
+    { path = "remote_secrets", format = ["sdist", "wheel"] },
+]
+keywords = [
+    "secrets",
+    "aws",
+    "gcp",
+    "azure",
+    "vault",
+    "kubernetes",
+]
+classifiers = [
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed"
+]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/jjpaulo2/fastrpa/issues"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+boto3 = "^1.34.158"
+google-cloud-secret-manager = "^2.20.2"
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.26.0"
+mypy = "^1.11.1"
+
+[tool.mypy]
+python_version = "3.10"
+disable_error_code = [
+    "import-untyped"
+]
+exclude = [
+    "debug(.*)\\.py"
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

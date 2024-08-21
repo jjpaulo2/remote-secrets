@@ -28,9 +28,15 @@ class SecretManager(ABC):
     def list(self) -> list[str]:
         raise MethodNotSupported('list', type(self).__name__)
     
-    def set(self, name: str, value: str):
-        raise MethodNotSupported('set', type(self).__name__)
-    
     def load(self):
         raise MethodNotSupported('load', type(self).__name__)
+    
+    def update(self, name: str, value: str):
+        raise MethodNotSupported('update', type(self).__name__)
+    
+    def create(self, name: str, value: str):
+        raise MethodNotSupported('create', type(self).__name__)
+    
+    def delete(self, name: str):
+        raise MethodNotSupported('delete', type(self).__name__)
     

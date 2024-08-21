@@ -1,5 +1,7 @@
 import json
 
+from remote_secrets.providers.base import SecretManager
+
 try:
     from boto3 import client
 
@@ -7,7 +9,7 @@ except ImportError:
     raise EnvironmentError('You must install \"remote-secrets[aws]\" extras!')
 
 
-class AWSParameterStoreManager:
+class AWSParameterStoreManager(SecretManager):
 
     def __init__(self, region: str | None = None):
         self.client = client('ssm', region_name=region)
@@ -26,9 +28,15 @@ class AWSParameterStoreManager:
             secret
             for secret in self.secret(name)['Parameter']['Value'].split(',')
         ]
+    
+    def list(self) -> list[str]:
+        return [
+            secret['Name']
+            for secret in self.client.describe_parameters()['Parameters']
+        ]
 
 
-class AWSSecretManager:
+class AWSSecretManager(SecretManager):
 
     def __init__(self, region: str | None = None):
         self.client = client('secretsmanager', region_name=region)
@@ -41,4 +49,9 @@ class AWSSecretManager:
 
     def get_json(self, name: str) -> dict[str, str]:
         return json.loads(self.secret(name)['SecretString'])
-    
+
+    def list(self) -> list[str]:
+        return [
+            secret['Name']
+            for secret in self.client.list_secrets()['SecretList']
+        ]

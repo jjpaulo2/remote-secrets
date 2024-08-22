@@ -4,6 +4,8 @@ from remote_secrets.providers.base import SecretManager
 
 try:
     from google.cloud.secretmanager import SecretManagerServiceClient, AccessSecretVersionResponse
+    from google.cloud.resourcemanager_v3 import ProjectsClient
+    from google.auth import default
 
 except ImportError:
     raise EnvironmentError('You must install \"remote-secrets[gcp]\" extras!')
@@ -11,16 +13,24 @@ except ImportError:
 
 class GCPSecretManager(SecretManager):
 
-    def __init__(self, project_id: str):
-        self.project_id = project_id
+    def __init__(self, project_id: str | None = None):
+        self._project: str | None = None
         self.client = SecretManagerServiceClient()
+        self.project_id = project_id
+        if self.project_id is None:
+            _, self.project_id = default()
 
     @property
-    def parent(self) -> str:
-        return f'projects/{self.project_id}'
+    def project(self) -> str:
+        if self._project is None:
+            credentials, _ = default()
+            client = ProjectsClient(credentials=credentials)
+            project = client.get_project(name=f'projects/{self.project_id}')
+            self._project = project.name
+        return self._project
 
     def secret_name(self, name: str) -> str:
-        return f'{self.parent}/secrets/{name}/versions/latest'
+        return f'{self.project}/secrets/{name}/versions/latest'
 
     def secret(self, name: str) -> AccessSecretVersionResponse:
         return self.client.access_secret_version(name=self.secret_name(name))
@@ -32,7 +42,7 @@ class GCPSecretManager(SecretManager):
         return json.loads(self.secret(name).payload.data)
     
     def list(self) -> list[str]:
-        request = {"parent": self.parent}
+        request = {"parent": self.project}
         return [
             secret.name
             for secret in self.client.list_secrets(request)

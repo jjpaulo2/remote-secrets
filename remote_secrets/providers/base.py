@@ -14,7 +14,7 @@ class SecretManager(ABC):
     client: Any
 
     def secret(self, name: str) -> Any:
-        raise MethodNotSupported('secret', type(self).__name__)
+        raise NotImplementedError
     
     def get(self, name: str) -> str:
         raise MethodNotSupported('get', type(self).__name__)

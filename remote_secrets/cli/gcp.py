@@ -43,7 +43,7 @@ def export(prefix: str = '', remove_prefix: bool = False, suffix: str = '', remo
         if secret_name.startswith(prefix) and s.endswith(suffix):
             secret_value = secrets.get(secret_name).replace('\n', '\\n')
             if remove_prefix:
-                secret_name = secret_name.lstrip(prefix)
+                secret_name = secret_name[len(prefix):]
             if remove_suffix:
-                secret_name = secret_name.rstrip(suffix)
+                secret_name = secret_name[:len(suffix)]
             console.print(f'{secret_name}=\'{secret_value}\'')

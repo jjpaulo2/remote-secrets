@@ -93,11 +93,12 @@ def export_secrets(prefix: str = '', remove_prefix: bool = False, suffix: str = 
 
     for s in secrets.list():
         if s.startswith(prefix) and s.endswith(suffix):
+            secret_name = s
             if remove_prefix:
-                s = s.lstrip(prefix)
+                secret_name = secret_name[len(prefix):]
             if remove_suffix:
-                s = s.rstrip(suffix)
-            console.print(f'{s}=\'{secrets.get(s)}\'')
+                secret_name = secret_name[:len(suffix)]
+            console.print(f'{secret_name}=\'{secrets.get(s)}\'')
 
 
 @cli_parameters.command('export')
@@ -105,11 +106,12 @@ def export_parameters(prefix: str = '', remove_prefix: bool = False, suffix: str
     '''Exports all secrets in .env format'''
     from remote_secrets.providers.aws import AWSParameterStoreManager
     parameters = AWSParameterStoreManager()
-    
+
     for p in parameters.list():
         if p.startswith(prefix) and p.endswith(suffix):
+            secret_name = p
             if remove_prefix:
-                p = p.lstrip(prefix)
+                secret_name = secret_name[len(prefix):]
             if remove_suffix:
-                p = p.rstrip(suffix)
-            console.print(f'{p}=\'{parameters.get(p)}\'')
+                secret_name = secret_name[:len(suffix)]
+            console.print(f'{secret_name}=\'{parameters.get(p)}\'')

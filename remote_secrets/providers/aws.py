@@ -34,6 +34,15 @@ class AWSParameterStoreManager(SecretManager):
     def update_list(self, name: str, value: list[str]):
         self.update(name, ", ".join(value))
 
+    def create(self, name: str, value: str, **kwargs):
+        args = {"Name": name, "Value": value, "Type": "SecureString"}
+        args.update(kwargs)
+        self.client.put_parameter(**args)
+
+    def create_list(self, name: str, value: list[str], **kwargs):
+        kwargs.update({"Type": "StringList"})
+        self.create(name, ", ".join(value), **kwargs)
+
     def delete(self, name: str, **kwargs):
         self.client.delete_parameter(Name=name)
 
@@ -61,6 +70,12 @@ class AWSSecretManager(SecretManager):
 
     def update_json(self, name: str, value: dict[str, str]):
         self.update(name, json.dumps(value))
+
+    def create(self, name: str, value: str, **kwargs):
+        self.client.create_secret(Name=name, SecretString=value, **kwargs)
+
+    def create_json(self, name: str, value: dict[str, str], **kwargs):
+        self.create(name, json.dumps(value), **kwargs)
 
     def delete(self, name: str, **kwargs):
         self.client.delete_secret(SecretId=name, **kwargs)

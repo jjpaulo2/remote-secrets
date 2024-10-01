@@ -38,13 +38,13 @@ class SecretManager(ABC):
     def update_json(self, name: str, value: dict[str, str]):
         raise MethodNotSupported("update_json", type(self).__name__)
 
-    def create(self, name: str, value: str):
+    def create(self, name: str, value: str, **kwargs):
         raise MethodNotSupported("create", type(self).__name__)
 
-    def create_list(self, name: str, value: list[str]):
+    def create_list(self, name: str, value: list[str], **kwargs):
         raise MethodNotSupported("create_list", type(self).__name__)
 
-    def create_json(self, name: str, value: dict[str, str]):
+    def create_json(self, name: str, value: dict[str, str], **kwargs):
         raise MethodNotSupported("create_json", type(self).__name__)
 
     def delete(self, name: str, **kwargs):

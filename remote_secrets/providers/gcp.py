@@ -1,8 +1,10 @@
 import json
 
+from remote_secrets.exceptions import SecretNotFoundException
 from remote_secrets.providers._base import SecretManager
 
 try:
+    from google.api_core.exceptions import NotFound
     from google.cloud.secretmanager import (
         SecretManagerServiceClient,
         AccessSecretVersionResponse,
@@ -43,13 +45,19 @@ class GCPSecretManager(SecretManager):
         return int(check.hexdigest(), 16)
 
     def secret_versions(self, name: str) -> list[str]:
-        versions = self.client.list_secret_versions(
-            request={"parent": self.client.secret_path(self.project_id, name)}
-        )
-        return [ver.name for ver in versions]
+        try:
+            versions = self.client.list_secret_versions(
+                request={"parent": self.client.secret_path(self.project_id, name)}
+            )
+            return [ver.name for ver in versions]
+        except NotFound:
+            return []
 
     def secret(self, name: str) -> AccessSecretVersionResponse:
-        return self.client.access_secret_version(name=self.secret_versions(name)[0])
+        try:
+            return self.client.access_secret_version(name=self.secret_versions(name)[0])
+        except IndexError:
+            raise SecretNotFoundException(name)
 
     def get(self, name: str) -> str:
         return self.secret(name).payload.data.decode()
@@ -67,9 +75,9 @@ class GCPSecretManager(SecretManager):
                 },
             }
         )
-        self.client.disable_secret_version(
-            request={"name": self.secret_versions(name)[1]}
-        )
+        secret_versions = self.secret_versions(name)
+        if len(secret_versions) > 1:
+            self.client.disable_secret_version(request={"name": secret_versions[1]})
 
     def update_json(self, name: str, value: dict[str, str]):
         self.update(name, json.dumps(value))
@@ -97,4 +105,6 @@ class GCPSecretManager(SecretManager):
 
     def list(self) -> list[str]:
         request = {"parent": self.project}
-        return [secret.name for secret in self.client.list_secrets(request)]
+        return [
+            secret.name.split("/")[-1] for secret in self.client.list_secrets(request)
+        ]

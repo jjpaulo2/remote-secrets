@@ -9,18 +9,19 @@ try:
     )
     from google.cloud.resourcemanager_v3 import ProjectsClient
     from google.auth import default
+    from google_crc32c import Checksum
 
 except ImportError:
     raise EnvironmentError('You must install "remote-secrets[gcp]" extras!')
 
 
 class GCPSecretManager(SecretManager):
+    client: SecretManagerServiceClient
+
     def __init__(self, project_id: str | None = None):
         self._project: str | None = None
         self.client = SecretManagerServiceClient()
-        self.project_id = project_id
-        if self.project_id is None:
-            _, self.project_id = default()
+        self.project_id = self._get_project_id(project_id)
 
     @property
     def project(self) -> str:
@@ -31,17 +32,67 @@ class GCPSecretManager(SecretManager):
             self._project = project.name
         return self._project
 
-    def secret_name(self, name: str) -> str:
-        return f"{self.project}/secrets/{name}/versions/latest"
+    def _get_project_id(self, project_id: str | None) -> str:
+        if not project_id:
+            _, project_id = default()
+        return str(project_id)
+
+    def _get_secret_name(self, name: str) -> str:
+        return f"{self.project}/secrets/{name}"
+
+    def _get_secret_version_name(self, name: str, version: str = "latest") -> str:
+        return self._get_secret_name(name) + f"/versions/{version}"
+
+    def _get_value_checksum(self, value: str) -> int:
+        check = Checksum()
+        check.update(value.encode())
+        return int(check.hexdigest(), 16)
 
     def secret(self, name: str) -> AccessSecretVersionResponse:
-        return self.client.access_secret_version(name=self.secret_name(name))
+        return self.client.access_secret_version(
+            name=self._get_secret_version_name(name)
+        )
 
     def get(self, name: str) -> str:
         return self.secret(name).payload.data.decode()
 
     def get_json(self, name: str) -> dict[str, str]:
         return json.loads(self.secret(name).payload.data)
+
+    def update(self, name: str, value: str):
+        self.client.add_secret_version(
+            request={
+                "parent": self._get_secret_name(name),
+                "payload": {
+                    "data": value.encode(),
+                    "data_crc32c": self._get_value_checksum(value),
+                },
+            }
+        )
+
+    def update_json(self, name: str, value: dict[str, str]):
+        self.update(name, json.dumps(value))
+
+    def create(self, name: str, value: str, **kwargs):
+        self.client.create_secret(
+            request={
+                "parent": f"projects/{self.project_id}",
+                "secret_id": name,
+                "secret": {
+                    "ttl": kwargs.get("ttl"),
+                    "replication": {"automatic": {}},
+                },
+            }
+        )
+        self.update(name, value)
+
+    def create_json(self, name: str, value: dict[str, str], **kwargs):
+        self.create(name, json.dumps(value), **kwargs)
+
+    def delete(self, name: str, **kwargs):
+        self.client.delete_secret(
+            request={"name": self.client.secret_path(self.project_id, name)}
+        )
 
     def list(self) -> list[str]:
         request = {"parent": self.project}

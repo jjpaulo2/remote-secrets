@@ -7,7 +7,7 @@ class MethodNotSupported(NotImplementedError):
         self.method_name = method_name
         self.class_name = class_name
         super().__init__(
-            f'Method "{method_name}" not supported for class "{class_name}"!'
+            f'Method "{method_name}" not supported for provider "{class_name}"!'
         )
 
 

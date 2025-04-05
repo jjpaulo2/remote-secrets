@@ -49,7 +49,7 @@ class AWSParameterStoreManager(SecretManager):
     def create(self, name: str, value: str, **kwargs):
         args = {"Name": name, "Value": value, "Type": "SecureString"}
         args.update(kwargs)
-        self.client.put_parameter(**args)
+        self.client.put_parameter(**args)  # type: ignore
 
     def create_list(self, name: str, value: list[str], **kwargs):
         kwargs.update({"Type": "StringList"})

@@ -35,9 +35,10 @@ grpcio = "1.60.0"
 pykube-ng = "^23.6.0"
 typer = "^0.12.4"
 rich = "^13.7.1"
+types-boto3 = {extras = ["secretsmanager", "ssm"], version = "^1.37.28"}
 
 [tool.poetry.extras]
-aws = ["boto3"]
+aws = ["boto3", "types-boto3"]
 gcp = ["google-auth", "google-cloud-secret-manager", "google-cloud-resource-manager", "grpcio", "google-crc32c"]
 k8s = ["pykube-ng"]
 cli = ["typer", "rich"]

@@ -1,20 +1,32 @@
 import json
+from typing import Mapping
 
+from remote_secrets.exceptions import SecretNotFoundException
 from remote_secrets.providers._base import SecretManager
 
 try:
     from boto3 import client
+    from types_boto3_secretsmanager import SecretsManagerClient
+    from types_boto3_ssm import SSMClient
+    from botocore.exceptions import ClientError
 
 except ImportError:
     raise EnvironmentError('You must install "remote-secrets[aws]" extras!')
 
 
 class AWSParameterStoreManager(SecretManager):
+    client: SSMClient
+
     def __init__(self, region: str | None = None):
         self.client = client("ssm", region_name=region)
 
-    def secret(self, name: str) -> dict:
-        return self.client.get_parameter(Name=name, WithDecryption=True)
+    def secret(self, name: str) -> Mapping:
+        try:
+            return self.client.get_parameter(Name=name, WithDecryption=True)
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise SecretNotFoundException(name)
+            raise exc
 
     def get(self, name: str) -> str:
         return self.secret(name)["Parameter"]["Value"]
@@ -53,11 +65,18 @@ class AWSParameterStoreManager(SecretManager):
 
 
 class AWSSecretManager(SecretManager):
+    client: SecretsManagerClient
+
     def __init__(self, region: str | None = None):
         self.client = client("secretsmanager", region_name=region)
 
-    def secret(self, name: str) -> dict:
-        return self.client.get_secret_value(SecretId=name)
+    def secret(self, name: str) -> Mapping:
+        try:
+            return self.client.get_secret_value(SecretId=name)
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise SecretNotFoundException(name)
+            raise exc
 
     def get(self, name: str) -> str:
         return self.secret(name)["SecretString"]

@@ -37,21 +37,19 @@ class GCPSecretManager(SecretManager):
             _, project_id = default()
         return str(project_id)
 
-    def _get_secret_name(self, name: str) -> str:
-        return f"{self.project}/secrets/{name}"
-
-    def _get_secret_version_name(self, name: str, version: str = "latest") -> str:
-        return self._get_secret_name(name) + f"/versions/{version}"
-
     def _get_value_checksum(self, value: str) -> int:
         check = Checksum()
         check.update(value.encode())
         return int(check.hexdigest(), 16)
 
-    def secret(self, name: str) -> AccessSecretVersionResponse:
-        return self.client.access_secret_version(
-            name=self._get_secret_version_name(name)
+    def secret_versions(self, name: str) -> list[str]:
+        versions = self.client.list_secret_versions(
+            request={"parent": self.client.secret_path(self.project_id, name)}
         )
+        return [ver.name for ver in versions]
+
+    def secret(self, name: str) -> AccessSecretVersionResponse:
+        return self.client.access_secret_version(name=self.secret_versions(name)[0])
 
     def get(self, name: str) -> str:
         return self.secret(name).payload.data.decode()
@@ -62,12 +60,15 @@ class GCPSecretManager(SecretManager):
     def update(self, name: str, value: str):
         self.client.add_secret_version(
             request={
-                "parent": self._get_secret_name(name),
+                "parent": self.client.secret_path(self.project_id, name),
                 "payload": {
                     "data": value.encode(),
                     "data_crc32c": self._get_value_checksum(value),
                 },
             }
+        )
+        self.client.disable_secret_version(
+            request={"name": self.secret_versions(name)[1]}
         )
 
     def update_json(self, name: str, value: dict[str, str]):

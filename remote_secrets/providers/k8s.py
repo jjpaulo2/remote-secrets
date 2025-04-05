@@ -11,6 +11,8 @@ except ImportError:
 
 
 class K8sSecretManager(SecretManager):
+    client: HTTPClient
+
     def __init__(self, namespace: str = "default"):
         self.namespace = namespace
         self.client = HTTPClient(KubeConfig.from_file())

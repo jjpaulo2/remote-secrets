@@ -1,32 +1,48 @@
+from remote_secrets.providers.gcp import GCPSecretManager
+
 try:
     from typer import Typer
-    from rich.console import Console
+    from remote_secrets.utils import console
 
 except ImportError:
     raise EnvironmentError('You must install "remote-secrets[cli]" extras!')
 
 
-console = Console()
 cli = Typer(name="gcp", help="Manage GCP secrets")
 
 
 @cli.command()
-def get(name: str):
-    """Gets a value of parameter"""
-    from remote_secrets.providers.gcp import GCPSecretManager
-
-    secrets = GCPSecretManager()
-
+def get(name: str, project_id: str | None = None):
+    """Gets a value of secret"""
+    secrets = GCPSecretManager(project_id)
     return console.print(secrets.get(name))
 
 
 @cli.command()
-def list():
-    """Lists all available parameters"""
-    from remote_secrets.providers.gcp import GCPSecretManager
+def update(name: str, value: str, project_id: str | None = None):
+    """Updates a secret with a new value"""
+    secrets = GCPSecretManager(project_id)
+    secrets.update(name, value)
 
-    secrets = GCPSecretManager()
 
+@cli.command()
+def create(name: str, value: str, project_id: str | None = None):
+    """Creates a secret with the given name and value"""
+    secrets = GCPSecretManager(project_id)
+    secrets.create(name, value)
+
+
+@cli.command()
+def delete(name: str, project_id: str | None = None):
+    """Deletes a given secret"""
+    secrets = GCPSecretManager(project_id)
+    secrets.delete(name)
+
+
+@cli.command()
+def list(project_id: str | None = None):
+    """Lists all available secrets"""
+    secrets = GCPSecretManager(project_id)
     for secret in secrets.list():
         console.print(secret)
 
@@ -37,18 +53,14 @@ def export(
     remove_prefix: bool = False,
     suffix: str = "",
     remove_suffix: bool = False,
+    project_id: str | None = None,
 ):
     """Exports all secrets in .env format"""
-    from remote_secrets.providers.gcp import GCPSecretManager
-
-    secrets = GCPSecretManager()
-
-    for s in secrets.list():
-        secret_name = s.split("/")[-1]
-        if secret_name.startswith(prefix) and s.endswith(suffix):
-            secret_value = secrets.get(secret_name).replace("\n", "\\n")
-            if remove_prefix:
-                secret_name = secret_name[len(prefix) :]
-            if remove_suffix:
-                secret_name = secret_name[: len(suffix)]
-            console.print(f"{secret_name}='{secret_value}'")
+    secrets = GCPSecretManager(project_id)
+    console.dot_env(
+        secrets,
+        prefix=prefix,
+        remove_prefix=remove_prefix,
+        suffix=suffix,
+        remove_suffix=remove_suffix,
+    )

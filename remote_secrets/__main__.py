@@ -1,9 +1,12 @@
-from remote_secrets.cli import aws
-from remote_secrets.cli import gcp
 from typer import Typer
 
-aws.cli.add_typer(aws.cli_secrets)
-aws.cli.add_typer(aws.cli_parameters)
+from remote_secrets.cli import aws
+from remote_secrets.cli import aws_parameters
+from remote_secrets.cli import aws_secrets
+from remote_secrets.cli import gcp
+
+aws.cli.add_typer(aws_parameters.cli)
+aws.cli.add_typer(aws_secrets.cli)
 
 cli = Typer()
 cli.add_typer(aws.cli)

@@ -24,6 +24,27 @@ def get(name: str, region: str | None = None):
 
 
 @cli.command()
+def update(name: str, value: str, region: str | None = None):
+    """Updates a secret with a new value"""
+    secrets = AWSSecretManager(region)
+    secrets.update(name, value)
+
+
+@cli.command()
+def create(name: str, value: str, region: str | None = None):
+    """Creates a secret with the given name and value"""
+    secrets = AWSSecretManager(region)
+    secrets.create(name, value)
+
+
+@cli.command()
+def delete(name: str, region: str | None = None):
+    """Deletes a given secret"""
+    secrets = AWSSecretManager(region)
+    secrets.delete(name)
+
+
+@cli.command()
 def list(region: str | None = None):
     """Lists all available secrets"""
     secrets = AWSSecretManager(region)

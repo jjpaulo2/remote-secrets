@@ -1,3 +1,4 @@
+from remote_secrets.exceptions import SecretNotFoundException
 from remote_secrets.providers.aws import AWSParameterStoreManager
 
 try:
@@ -17,7 +18,7 @@ def get(name: str, region: str | None = None):
     parameters = AWSParameterStoreManager(region)
     try:
         return console.print(parameters.get(name))
-    except parameters.client.exceptions.ParameterNotFound:
+    except SecretNotFoundException:
         console.error(f'No one parameter called "{name}" was found!')
         raise Exit(22)
 

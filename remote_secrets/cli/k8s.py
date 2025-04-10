@@ -8,7 +8,7 @@ except ImportError:
     raise EnvironmentError('You must install "remote-secrets[k8s]" extras!')
 
 
-cli = Typer(name="gcp", help="Manage Kubernetes secrets")
+cli = Typer(name="k8s", help="Manage Kubernetes secrets")
 
 
 @cli.command()
